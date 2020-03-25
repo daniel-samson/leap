@@ -1,9 +1,9 @@
 [package]
-name = "paginate"
+name = "leap"
 version = "0.1.0"
 authors = ["Daniel Samson"]
 edition = "2018"
-description = "A rust framework for createing web applications."
+description = "A rust framework for creating web applications."
 repository = "https://github.com/daniel-samson/leap.git"
 readme = "README.md"
 documentation = "https://docs.rs/leap"
