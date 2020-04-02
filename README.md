@@ -5,7 +5,7 @@ Just started
 [![Rust](https://github.com/daniel-samson/leap/workflows/Rust/badge.svg?branch=master)](https://github.com/daniel-samson/leap/actions)
 [![Docs](https://docs.rs/leap/badge.svg?version=0.1.0)](https://docs.rs/leap/0.1.0/leap/)
 [![codecov](https://codecov.io/gh/daniel-samson/leap/branch/master/graph/badge.svg)](https://codecov.io/gh/daniel-samson/leap)
-[![book](https://img.shields.io/badge/Book-v0.1.0-blue)](https://leap.rs/book/version/master/introduction/)
+[![book](https://img.shields.io/badge/Book-v0.1.0-blue)](https://leap.rs/book/version/0.1.0/introduction/)
 ### Example
 
 Leap passed the learning curve and craft web applications quickly with ease.
