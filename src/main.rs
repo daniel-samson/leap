@@ -1,3 +1,1 @@
-fn main() {
-    println!("Coming soon");
-}
+leap::cli!();
