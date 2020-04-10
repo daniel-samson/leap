@@ -1,8 +1,6 @@
-use bytes::buf::ext::BufExt;
+use clap::{App, AppSettings, Arg, SubCommand};
 use directories::ProjectDirs;
-use hyper::Client;
-use hyper::{Body, Method, Request};
-use hyper_tls::HttpsConnector;
+use log::info;
 use reqwest;
 use reqwest::Response;
 use semver::Version;
@@ -12,64 +10,30 @@ use std::path::Path;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("Leap is check for updates");
-    let versions = get_leap_versions().await?;
-    let latest_tag = get_latest_version(versions)
-        .expect("Unable to get the latest version of the leap command.");
-    let current_version = Version::parse(env!("CARGO_PKG_VERSION"))
-        .expect("Unable to parse the current version of the leap command.");
-    let latest_version = Version::parse(latest_tag.name.as_str())
-        .expect("Unable to parse the latest version of the leap command.");
-    if latest_version > current_version {
-        println!(
-            "A new version of the leap command is now available. Run cargo install leap to update."
-        );
-    }
-    println!(
-        "command latest version: {} {} {}",
-        latest_tag.name, latest_tag.zipball, latest_tag.tarball
-    );
+    env_logger::init();
 
-    let versions = get_leap_project_template_versions().await?;
-    let latest = get_latest_version(versions)
-        .expect("Unable to get the latest version of the leap command.");
-    println!(
-        "project template latest version: {} {} {}",
-        latest.name, latest.zipball, latest.tarball
-    );
+    let matches = App::new("leap")
+        .setting(AppSettings::ArgRequiredElseHelp)
+        .version(clap::crate_version!())
+        .author("Kevin K. <kbknapp@gmail.com>")
+        .about("Provides the tooling you need to work with the leap framework")
+        .subcommand(
+            SubCommand::with_name("new")
+                .about("Creates a new project")
+                .version("0.1.0")
+                .arg(
+                    Arg::with_name("NAME")
+                        .help("The name you wish to call your project")
+                        .required(true)
+                        .index(1),
+                ),
+        )
+        .get_matches();
 
-    let project_template_dirs = ProjectDirs::from("rs", "leap", "leap-project-template")
-        .expect("Unable to get system directories");
-    // TODO: Check if we have a cached version
-
-    let template_dir = project_template_dirs.cache_dir().join(&latest.name);
-
-    if !template_dir.exists() {
-        create_dir_all(template_dir.as_path())?;
+    if let Some(command) = matches.subcommand_matches("new") {
+        new_project(command.value_of("NAME").expect("Missing NAME")).await?;
     }
 
-    let template_path = template_dir.join("template.zip");
-    if !&template_path.exists() {
-        println!("Downloading {} from {}", &latest.name, &latest.zipball);
-        let zipball = download_github(latest.zipball.as_str()).await?;
-        let contents = zipball.bytes().await?;
-        // TODO: Download latest version when there isn't a cached version available
-        std::fs::write(&template_path, contents).unwrap();
-    }
-
-    // TODO: add logger to hide debug messages
-    // TODO: Extract template into current working director
-    println!("extracting...");
-    extract_zip(template_path.as_path()).unwrap();
-    let (short_sha, _) = latest.sha.split_at(7);
-    let new_dir = format!("daniel-samson-leap-project-template-{}", short_sha);
-    let project_name = "project-name";
-    std::fs::rename(
-        std::env::current_dir()?.join(new_dir.as_str()),
-        std::env::current_dir()?.join(project_name),
-    )
-    .unwrap();
-    println!("{}", new_dir);
     Ok(())
 }
 
@@ -83,6 +47,79 @@ fn get_latest_version(tags: Vec<Tag>) -> Option<Tag> {
             sha: tag.sha.clone(),
         }),
     }
+}
+
+async fn new_project(project_name: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    info!("leap is checking for updates ...");
+    let versions = get_leap_versions().await?;
+    let latest_tag = get_latest_version(versions)
+        .expect("Unable to get the latest version of the leap command.");
+    let current_version = Version::parse(env!("CARGO_PKG_VERSION"))
+        .expect("Unable to parse the current version of the leap command.");
+    let latest_version = Version::parse(latest_tag.name.as_str())
+        .expect("Unable to parse the latest version of the leap command.");
+    if latest_version > current_version {
+        println!(
+            "A new version of the leap command is now available. Run cargo install leap to update."
+        );
+    }
+
+    info!(
+        "command latest version: {} {} {}",
+        latest_tag.name, latest_tag.zipball, latest_tag.tarball
+    );
+
+    let versions = get_leap_project_template_versions().await?;
+    let latest = get_latest_version(versions)
+        .expect("Unable to get the latest version of the leap command.");
+    info!(
+        "project template latest version: {} {} {}",
+        latest.name, latest.zipball, latest.tarball
+    );
+
+    let project_template_dirs = ProjectDirs::from("rs", "leap", "leap-project-template")
+        .expect("Unable to get system directories");
+
+    let template_dir = project_template_dirs.cache_dir().join(&latest.name);
+
+    if !template_dir.exists() {
+        create_dir_all(template_dir.as_path())?;
+    }
+
+    let template_path = template_dir.join("template.zip");
+    if !&template_path.exists() {
+        info!("Downloading {} from {}", &latest.name, &latest.zipball);
+        let zipball = download_github(latest.zipball.as_str()).await?;
+        let contents = zipball.bytes().await?;
+        std::fs::write(&template_path, contents).unwrap();
+    }
+
+    info!("extracting template...");
+    extract_zip(template_path.as_path(), project_template_dirs.data_dir()).unwrap();
+    let (short_sha, _) = latest.sha.split_at(7);
+    let new_dir = format!("daniel-samson-leap-project-template-{}", short_sha);
+
+    if project_template_dirs
+        .data_dir()
+        .join(new_dir.as_str())
+        .exists()
+    {
+        info!("renaming template...");
+        let action = std::fs::rename(
+            project_template_dirs.data_dir().join(new_dir.as_str()),
+            std::env::current_dir()?.join(project_name),
+        );
+
+        info!("copying template...");
+        match action {
+            Ok(_) => {}
+            Err(_) => {
+                println!("Unable to create project because the project name already exists");
+            }
+        }
+    }
+
+    Ok(())
 }
 
 async fn get_leap_versions() -> Result<Vec<Tag>, Box<dyn std::error::Error + Send + Sync>> {
@@ -117,23 +154,16 @@ async fn get_github_tags(
 }
 
 async fn get_github(url: &str) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
-    // This is where we will setup our HTTP client requests.
-    let https = HttpsConnector::new();
-    let client = Client::builder().build::<_, hyper::Body>(https);
-
-    let req = Request::builder()
-        .method(Method::GET)
-        .uri(url)
+    let response = reqwest::Client::new()
+        .get(url)
         .header("Accept", "application/vnd.github.v3+json")
         .header("User-Agent", "https://leap.rs/")
-        .body(Body::from(r#""#))
-        .unwrap();
-
-    // Await the response...
-    let res = client.request(req).await.unwrap();
-    let body = hyper::body::aggregate(res).await.unwrap();
-    let reader = body.reader();
-    let v: Value = serde_json::from_reader(reader).unwrap();
+        .send()
+        .await?;
+    info!("status: {}", response.status());
+    let body = response.text().await?;
+    info!("body: {}", &body);
+    let v: Value = serde_json::from_str(body.as_str()).unwrap();
     Ok(v)
 }
 
@@ -174,31 +204,31 @@ struct Tag {
     sha: String,
 }
 
-fn extract_zip(path: &Path) -> Result<(), String> {
+fn extract_zip(path: &Path, extract_to: &Path) -> Result<(), String> {
     let file = std::fs::File::open(&path).unwrap();
 
     let mut archive = zip::ZipArchive::new(file).unwrap();
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).unwrap();
-        let outpath = file.sanitized_name();
+        let outpath = extract_to.join(file.sanitized_name());
 
         {
             let comment = file.comment();
             if !comment.is_empty() {
-                println!("File {} comment: {}", i, comment);
+                info!("File {} comment: {}", i, comment);
             }
         }
 
         if (&*file.name()).ends_with('/') {
-            println!(
+            info!(
                 "File {} extracted to \"{}\"",
                 i,
                 outpath.as_path().display()
             );
             std::fs::create_dir_all(&outpath).unwrap();
         } else {
-            println!(
+            info!(
                 "File {} extracted to \"{}\" ({} bytes)",
                 i,
                 outpath.as_path().display(),
