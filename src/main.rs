@@ -2,56 +2,50 @@ use bytes::buf::ext::BufExt;
 use hyper::Client;
 use hyper::{Body, Method, Request};
 use hyper_tls::HttpsConnector;
-use semver;
 use serde_json::Value;
-use std::borrow::Borrow;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("Leap Versions:");
+    println!("Leap");
     let versions = get_leap_versions().await?;
-    for version in versions {
-        println!("{}: {}", version.name, version.url);
-    }
+    let latest = get_latest_version(versions)
+        .expect("Unable to get the latest version of the leap command.");
+    println!("command latest version: {} {}", latest.name, latest.url);
 
-    println!("Leap Project Template Versions:");
     let versions = get_leap_project_template_versions().await?;
-    for version in versions {
-        println!("{}: {}", version.name, version.url);
-    }
+    let latest = get_latest_version(versions)
+        .expect("Unable to get the latest version of the leap command.");
+    println!(
+        "project template latest version: {} {}",
+        latest.name, latest.url
+    );
 
     Ok(())
 }
 
-async fn get_leap_versions() -> Result<Vec<Version>, Box<dyn std::error::Error + Send + Sync>> {
+fn get_latest_version(tags: Vec<Tag>) -> Option<Tag> {
+    match tags.first() {
+        None => None,
+        Some(tag) => Some(Tag {
+            name: tag.name.clone(),
+            url: tag.url.clone(),
+        }),
+    }
+}
+
+async fn get_leap_versions() -> Result<Vec<Tag>, Box<dyn std::error::Error + Send + Sync>> {
     let tags_url = get_github_tags_url("https://api.github.com/repos/daniel-samson/leap").await?;
     let tags = get_github_tags(tags_url).await?;
-    let mut versions = get_versions_from_tags(tags);
-
-    versions.sort_by(|a, b| {
-        let va = semver::Version::parse(a.name.as_str()).expect("unable to parse version");
-        let vb = semver::Version::parse(b.name.as_str()).expect("unable to parse version");
-        va.cmp(vb.borrow())
-    });
-
-    Ok(versions)
+    Ok(get_versioned_tags(tags))
 }
 
 async fn get_leap_project_template_versions(
-) -> Result<Vec<Version>, Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<Vec<Tag>, Box<dyn std::error::Error + Send + Sync>> {
     let tags_url =
         get_github_tags_url("https://api.github.com/repos/daniel-samson/leap-project-template")
             .await?;
     let tags = get_github_tags(tags_url).await?;
-    let mut versions = get_versions_from_tags(tags);
-
-    versions.sort_by(|a, b| {
-        let va = semver::Version::parse(a.name.as_str()).expect("unable to parse version");
-        let vb = semver::Version::parse(b.name.as_str()).expect("unable to parse version");
-        va.cmp(vb.borrow())
-    });
-
-    Ok(versions)
+    Ok(get_versioned_tags(tags))
 }
 
 async fn get_github_tags_url(
@@ -91,7 +85,7 @@ async fn get_github(url: &str) -> Result<Value, Box<dyn std::error::Error + Send
     Ok(v)
 }
 
-fn get_versions_from_tags(tags: Vec<Value>) -> Vec<Version> {
+fn get_versioned_tags(tags: Vec<Value>) -> Vec<Tag> {
     tags.iter()
         .map(|tag| {
             (
@@ -100,14 +94,14 @@ fn get_versions_from_tags(tags: Vec<Value>) -> Vec<Version> {
             )
         })
         .filter(|(name, _)| name.starts_with("v"))
-        .map(|(name, url)| Version {
+        .map(|(name, url)| Tag {
             name: String::from(name.trim_start_matches('v')),
             url: String::from(url),
         })
         .collect()
 }
 
-struct Version {
+struct Tag {
     name: String,
     url: String,
 }
