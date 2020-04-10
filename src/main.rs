@@ -123,7 +123,7 @@ async fn new_project(project_name: &str) -> Result<(), Box<dyn std::error::Error
 }
 
 async fn get_leap_versions() -> Result<Vec<Tag>, Box<dyn std::error::Error + Send + Sync>> {
-    let tags_url = get_github_tags_url("https://api.github.com/repos/daniel-samson/leap").await?;
+    let tags_url = get_github_tags_url("https://daniel-sanson:727dbf8f4b0476acfd530e80cf570e6f2149e4fd@api.github.com/repos/daniel-samson/leap").await?;
     let tags = get_github_tags(tags_url).await?;
     Ok(get_versioned_tags(tags))
 }
@@ -131,7 +131,7 @@ async fn get_leap_versions() -> Result<Vec<Tag>, Box<dyn std::error::Error + Sen
 async fn get_leap_project_template_versions(
 ) -> Result<Vec<Tag>, Box<dyn std::error::Error + Send + Sync>> {
     let tags_url =
-        get_github_tags_url("https://api.github.com/repos/daniel-samson/leap-project-template")
+        get_github_tags_url("https://daniel-sanson:727dbf8f4b0476acfd530e80cf570e6f2149e4fd@api.github.com/repos/daniel-samson/leap-project-template")
             .await?;
     let tags = get_github_tags(tags_url).await?;
     Ok(get_versioned_tags(tags))
