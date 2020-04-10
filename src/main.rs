@@ -2,15 +2,28 @@ use bytes::buf::ext::BufExt;
 use hyper::Client;
 use hyper::{Body, Method, Request};
 use hyper_tls::HttpsConnector;
+use semver::Version;
 use serde_json::Value;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!("Leap");
     let versions = get_leap_versions().await?;
-    let latest = get_latest_version(versions)
+    let latest_tag = get_latest_version(versions)
         .expect("Unable to get the latest version of the leap command.");
-    println!("command latest version: {} {}", latest.name, latest.url);
+    let current_version = Version::parse(env!("CARGO_PKG_VERSION"))
+        .expect("Unable to parse the current version of the leap command.");
+    let latest_version = Version::parse(latest_tag.name.as_str())
+        .expect("Unable to parse the latest version of the leap command.");
+    if latest_version > current_version {
+        println!(
+            "A new version of the leap command is now available. Run cargo install leap to update."
+        );
+    }
+    println!(
+        "command latest version: {} {}",
+        latest_tag.name, latest_tag.url
+    );
 
     let versions = get_leap_project_template_versions().await?;
     let latest = get_latest_version(versions)
