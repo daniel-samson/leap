@@ -2,15 +2,20 @@ use bytes::buf::ext::BufExt;
 use hyper::Client;
 use hyper::{Body, Method, Request};
 use hyper_tls::HttpsConnector;
+use semver;
 use serde_json::Value;
+use std::borrow::Borrow;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("Versions:");
-    let tags_url = get_github_tags_url().await?;
-    let tags = get_github_tags(tags_url).await?;
-    let versions = get_versions_from_tags(tags);
+    println!("Leap Versions:");
+    let versions = get_leap_versions().await?;
+    for version in versions {
+        println!("{}: {}", version.name, version.url);
+    }
 
+    println!("Leap Project Template Versions:");
+    let versions = get_leap_project_template_versions().await?;
     for version in versions {
         println!("{}: {}", version.name, version.url);
     }
@@ -18,8 +23,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     Ok(())
 }
 
-async fn get_github_tags_url() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    let res = get_github("https://api.github.com/repos/daniel-samson/leap").await?;
+async fn get_leap_versions() -> Result<Vec<Version>, Box<dyn std::error::Error + Send + Sync>> {
+    let tags_url = get_github_tags_url("https://api.github.com/repos/daniel-samson/leap").await?;
+    let tags = get_github_tags(tags_url).await?;
+    let mut versions = get_versions_from_tags(tags);
+
+    versions.sort_by(|a, b| {
+        let va = semver::Version::parse(a.name.as_str()).expect("unable to parse version");
+        let vb = semver::Version::parse(b.name.as_str()).expect("unable to parse version");
+        va.cmp(vb.borrow())
+    });
+
+    Ok(versions)
+}
+
+async fn get_leap_project_template_versions(
+) -> Result<Vec<Version>, Box<dyn std::error::Error + Send + Sync>> {
+    let tags_url =
+        get_github_tags_url("https://api.github.com/repos/daniel-samson/leap-project-template")
+            .await?;
+    let tags = get_github_tags(tags_url).await?;
+    let mut versions = get_versions_from_tags(tags);
+
+    versions.sort_by(|a, b| {
+        let va = semver::Version::parse(a.name.as_str()).expect("unable to parse version");
+        let vb = semver::Version::parse(b.name.as_str()).expect("unable to parse version");
+        va.cmp(vb.borrow())
+    });
+
+    Ok(versions)
+}
+
+async fn get_github_tags_url(
+    api_url: &str,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let res = get_github(api_url).await?;
     let tags_url = res["tags_url"].as_str().expect("failed to get tags_url");
     Ok(String::from(tags_url))
 }
