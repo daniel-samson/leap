@@ -51,7 +51,7 @@ fn get_versioned_tags(tags: Vec<Value>) -> Vec<Tag> {
                 tag["commit"]["sha"].as_str().unwrap(),
             )
         })
-        .filter(|(name, _, _, _)| name.starts_with("v"))
+        .filter(|(name, _, _, _)| name.starts_with('v'))
         .map(|(name, zipball, tarball, sha)| Tag {
             name: String::from(name.trim_start_matches('v')),
             zipball: String::from(zipball),

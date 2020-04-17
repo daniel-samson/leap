@@ -24,7 +24,7 @@ pub fn update() {
         .as_secs() as usize;
 
     let last_six_months = now - 15_778_800_usize;
-    let its_been_ages = &last_six_months < &config.update.last;
+    let its_been_ages = last_six_months < config.update.last;
 
     // todo: check &config.update.last
     if its_been_ages || !dir.data_dir().join(&config.template.compressed).exists() {
@@ -114,7 +114,7 @@ pub fn update() {
             Err(e) => {
                 log::error!(
                     "unable to extract project template because {}",
-                    e.to_string()
+                    e
                 );
                 return;
             }

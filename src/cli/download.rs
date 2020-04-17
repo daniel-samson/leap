@@ -20,7 +20,7 @@ pub fn get(url: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync
 
                 return Ok(res.body_bytes().await?);
             },
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         }
     })
 }
