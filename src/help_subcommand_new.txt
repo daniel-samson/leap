@@ -1,0 +1,10 @@
+Create a new leap project
+
+USAGE:
+	leap new <project name>
+
+ARGUMENTS:
+	<project name>      The name of the project and the directory
+
+
+See https://leap.rs/book/version/master/getting-started/installation/ for more information.

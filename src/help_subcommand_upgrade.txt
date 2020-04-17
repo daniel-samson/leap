@@ -1,0 +1,6 @@
+Upgrade an existing leap project to the latest version
+
+USAGE:
+	leap upgrade
+
+See https://leap.rs/book/version/master/prologue/upgrade-guide/ for more information.
