@@ -1,0 +1,11 @@
+Leap command line tool
+
+USAGE:
+	leap [SUBCOMMAND]
+
+SUBCOMMANDS:
+	new         creates a new project
+	update      updates leap to the latest version
+	upgrade     upgrades project to the latest version
+
+See https://leap.rs/book/version/master/introduction/ for more information.
