@@ -23,7 +23,7 @@ pub fn update() {
         .expect("The day the earth stood still?")
         .as_secs() as usize;
 
-    let last_six_months = now - 15778800usize;
+    let last_six_months = now - 15_778_800_usize;
     let its_been_ages = &last_six_months < &config.update.last;
 
     // todo: check &config.update.last

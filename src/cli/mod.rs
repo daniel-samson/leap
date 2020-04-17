@@ -21,7 +21,6 @@ pub fn new_project(name: String) {
         Ok(_) => println!("Project successfully created"),
         Err(e) => {
             log::error!("unable to save project template because {}", e.to_string());
-            return;
         }
     }
 }
