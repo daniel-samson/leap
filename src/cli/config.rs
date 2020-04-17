@@ -180,7 +180,6 @@ mod tests {
 
     #[test]
     fn config_works() {
-        assert!(delete().is_ok());
         let new_config = new();
         assert!(new_config.is_ok());
         let config = read();
