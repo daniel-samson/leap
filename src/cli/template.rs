@@ -1,10 +1,10 @@
 //! Template manager
 
-use crate::cli::{config, download, github};
+use semver::Version;
 
+use crate::cli::{config, download, github};
 use crate::cli::config::{TemplateConfig, UpdateConfig};
 use crate::cli::zip;
-use semver::Version;
 
 pub fn update() {
     let config = config::config();
@@ -140,16 +140,23 @@ pub fn new_project(name: &str) -> Result<(), Box<dyn std::error::Error + Send + 
         .join(&config.template.extracted);
 
     log::info!("renaming template...");
-    let action = std::fs::rename(
+    let action = crate::cli::fs::copy(
         &template_path,
         std::env::current_dir()?.join(name),
     );
 
     log::info!("copying template...");
     match action {
-        Ok(_) => {}
-        Err(_) => {
-            println!("Unable to create project because the project name already exists");
+        Ok(_) => {
+            let cargo = std::env::current_dir()?.join(name).join("Cargo.toml");
+            let updated_cargo = std::fs::read_to_string(&cargo)
+                .expect("Unable to read Cargo.toml")
+                .replace("leap-project-template", name);
+            std::fs::write(cargo, updated_cargo)
+                .expect("Unable to write Cargo.toml");
+        }
+        Err(e) => {
+            println!("Unable to create project because {}", e);
         }
     }
 
