@@ -147,7 +147,14 @@ pub fn new_project(name: &str) -> Result<(), Box<dyn std::error::Error + Send + 
 
     log::info!("copying template...");
     match action {
-        Ok(_) => {}
+        Ok(_) => {
+            let cargo = std::env::current_dir()?.join(name).join("Cargo.toml");
+            let updated_cargo = std::fs::read_to_string(&cargo)
+                .expect("Unable to read Cargo.toml")
+                .replace("leap-project-template", name);
+            std::fs::write(cargo, updated_cargo)
+                .expect("Unable to write Cargo.toml");
+        }
         Err(e) => {
             println!("Unable to create project because {}", e);
         }
