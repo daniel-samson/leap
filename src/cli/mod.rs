@@ -2,6 +2,7 @@
 #[allow(unused)]
 mod config;
 mod download;
+mod fs;
 mod github;
 mod template;
 mod zip;

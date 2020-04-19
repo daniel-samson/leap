@@ -1,10 +1,10 @@
 //! Template manager
 
-use crate::cli::{config, download, github};
+use semver::Version;
 
+use crate::cli::{config, download, github};
 use crate::cli::config::{TemplateConfig, UpdateConfig};
 use crate::cli::zip;
-use semver::Version;
 
 pub fn update() {
     let config = config::config();
@@ -140,7 +140,7 @@ pub fn new_project(name: &str) -> Result<(), Box<dyn std::error::Error + Send + 
         .join(&config.template.extracted);
 
     log::info!("renaming template...");
-    let action = std::fs::rename(
+    let action = crate::cli::fs::copy(
         &template_path,
         std::env::current_dir()?.join(name),
     );
@@ -148,8 +148,8 @@ pub fn new_project(name: &str) -> Result<(), Box<dyn std::error::Error + Send + 
     log::info!("copying template...");
     match action {
         Ok(_) => {}
-        Err(_) => {
-            println!("Unable to create project because the project name already exists");
+        Err(e) => {
+            println!("Unable to create project because {}", e);
         }
     }
 
