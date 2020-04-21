@@ -19,7 +19,9 @@ pub fn new_project(name: String) {
     template::update();
     // Create project
     match template::new_project(name.as_str()) {
-        Ok(_) => println!("Project successfully created"),
+        Ok(_) => {
+            println!("Project successfully created. Please ensure to edit the Cargo.toml file.")
+        }
         Err(e) => {
             log::error!("unable to save project template because {}", e.to_string());
         }
